@@ -2,6 +2,7 @@
 
 ## 路径
 
+```
 Project_4/
 ├── data/
 │   ├── data1/      20240301 至 20240315，共 15 个日期目录
@@ -10,3 +11,4 @@ Project_4/
 │   └── project/    前期资料
 ├── .gitignore
 └── README.md
+```
