@@ -392,7 +392,10 @@ def _request_completion(
     :return: 拼好的模型文本。
     """
     if not settings.endpoint:
-        raise FallbackError("未配置 LLM_ENDPOINT", code="configuration_error")
+        raise FallbackError(
+            "未配置 fallback.endpoint（config.local.json）",
+            code="configuration_error",
+        )
     body = json.dumps({"content": prompt}, ensure_ascii=False).encode("utf-8")
     headers = {"Content-Type": "application/json", "Accept": "text/event-stream"}
     if settings.api_token:

@@ -20,7 +20,7 @@ from backend.errors import (
     STATUS_STALE,
 )
 from backend.models import AnalysisResult, SaveResult, ScopeResult
-from backend.raw_store import path_key_of
+from backend.repository import path_key_of
 from backend.textutil import canonical_json, sha256_hex
 
 LOGGER = logging.getLogger(__name__)

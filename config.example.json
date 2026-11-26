@@ -1,0 +1,32 @@
+{
+  "database": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "name": "futures_reports",
+    "user": "root",
+    "password": "",
+    "connect_timeout": 10
+  },
+  "data_root": "data",
+  "analyzer_version": "backend-1.0.0",
+  "parser_timeout_seconds": 60,
+  "max_attachment_depth": 2,
+  "max_attachments": 8,
+  "analyze_workers": 1,
+  "fallback": {
+    "endpoint": "",
+    "api_token": "",
+    "model_id": "course-fallback",
+    "prompt_version": "fallback-v1",
+    "connect_timeout": 10,
+    "read_timeout": 60,
+    "max_response_bytes": 262144,
+    "max_fragments": 3,
+    "enabled": false
+  },
+  "api": {
+    "page_size": 50,
+    "max_page_size": 100,
+    "cors_origins": []
+  }
+}

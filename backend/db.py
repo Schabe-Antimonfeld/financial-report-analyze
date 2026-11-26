@@ -48,11 +48,11 @@ def connect(
 ) -> Any:
     """建立一条新的 MySQL 连接。
 
-    :param settings: 数据库配置或全局配置，默认读取环境变量。
+    :param settings: 数据库配置或全局配置，默认读取 ``config.local.json``。
     :param database: 覆盖库名，``None`` 时使用配置值。
     :param autocommit: 是否自动提交，查询连接可设为 ``True``。
     :return: 连接对象。
-    :raises ConfigurationError: 未提供数据库密码。
+    :raises ConfigurationError: 未在本地配置中填写数据库密码。
     :raises DatabaseUnavailableError: 驱动缺失或连接失败。
     """
     if settings is None:
@@ -62,7 +62,10 @@ def connect(
     else:
         database_settings = settings
     if not database_settings.is_password_set:
-        raise ConfigurationError("未设置 DB_PASSWORD 环境变量")
+        raise ConfigurationError(
+            "未配置数据库密码：请复制 config.example.json 为 config.local.json "
+            "并填写 database.password"
+        )
 
     driver = _load_driver()
     try:

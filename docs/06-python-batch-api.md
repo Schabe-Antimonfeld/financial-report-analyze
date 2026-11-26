@@ -9,12 +9,13 @@
 ```text
 backend/
   __init__.py
-  config.py           环境变量配置（数据库、模型、API）
+  config.py           读取 config.local.json（数据库、模型、API）
   errors.py           统一异常与错误码
   textutil.py         NFKC／空白归一化、稳定 JSON、SHA-256
   models.py           RawArticle、Block、RuleResult、FallbackTask 等数据模型
   db.py               连接、显式事务、死锁重试
-  raw_store.py        阶段 01：ingest_file / load_article / find_article_id
+  store.py            阶段 01（1 号交付）：read_file / store_source / 只读查询
+  repository.py       阶段 06 适配层：复用 store.py，统一配置与异常
   parsers/            格式分流；pdf.py、html.py、png.py 为可替换实现
   rules.py            阶段 04：extract_metadata / extract_opinions（基线）
   fallback.py         阶段 05：plan_fallback / infer_direction / SSE / 引文校验
@@ -23,11 +24,11 @@ backend/
   cli.py              阶段 06：ingest / analyze / api 命令
   api_queries.py      查询层：筛选、游标、趋势聚合、证据原文
   api.py              阶段 06：FastAPI 四个接口
-  sql/                001_raw.sql、002_analysis.sql
+  database/           001_raw.sql（参考）、002_analysis.sql
 samples/              交给 5 号的接口响应样例（列表、详情、趋势、HTML 证据）
-tests/                unittest，不需要数据库与外部命令
+tests/                unittest，不需要数据库
+config.example.json   本地配置模板（空密码，可提交）
 requirements.txt
-.env.example
 ```
 
 ## 环境准备
@@ -40,22 +41,34 @@ requirements.txt
 4. 建库并建表：
 
    ```powershell
-   mysql -u root -p < backend/sql/001_raw.sql
-   mysql -u root -p futures_reports < backend/sql/002_analysis.sql
+   mysql -u root -p < backend/database/001_raw.sql
+   mysql -u root -p futures_reports < backend/database/002_analysis.sql
    ```
 
-5. 配置环境变量（参数名与阶段 01 交接一致）：
+5. 生成本地配置：
 
    ```powershell
-   $env:DB_HOST='127.0.0.1'; $env:DB_PORT='3306'
-   $env:DB_NAME='futures_reports'; $env:DB_USER='futures_app'
-   $env:DB_PASSWORD='***'
-   $env:DATA_ROOT='data'
-   $env:LLM_ENDPOINT='https://课程接口地址/...'
-   $env:LLM_API_TOKEN='***'
+   Copy-Item config.example.json config.local.json
+   notepad config.local.json      # 填写 database.password、fallback.endpoint 等
    ```
 
-   `.env.example` 列出全部变量；程序不做自动加载，避免把密码写进仓库。
+   - 代码**不读取环境变量**，配置只来自 `config.local.json`；也可以用
+     `python -m backend.cli --config 其他路径 ...` 指定。
+   - `config.local.json` 已列入 `.gitignore`，不会上传；仓库里只保留空密码的
+     `config.example.json`。
+   - 只跑单元测试时不需要这个文件，缺省配置即可通过。
+
+   `.gitignore` 至少包含：
+
+   ```gitignore
+   config.local.json
+   .env
+   data/
+   __pycache__/
+   *.py[cod]
+   regression.json
+   analyze.json
+   ```
 
 ## 命令
 
@@ -223,21 +236,24 @@ HTML 当页面返回。PDF／PNG 带 `Content-Disposition: inline` 与
   字段不变即可。
 - 阶段 05 的兜底：`plan_fallback`、`infer_direction` 在 `backend/fallback.py`，
   已实现 SSE 解析、超时、字节上限、引文校验与 `retryable` 标记；接口地址与
-  令牌只从环境变量读取。
-- 阶段 01 的导入接口：`ingest_file`、`load_article`、`find_article_id` 在
-  `backend/raw_store.py`，按手册的三种状态（`inserted`／`updated`／`skipped`）
-  与事务回滚实现。若由 1 号另供实现，替换本文件即可。
+  令牌从 `config.local.json` 的 `fallback` 段读取。
+- 阶段 01 的导入：`backend/store.py` 由 1 号维护，`read_file`、`store_source`、
+  `discover_files`、`detect_format` 直接复用；`backend/repository.py` 只做连接
+  管理、异常转换和两条只读查询（`load_article`、`find_article_id`）。`store.py`
+  的 `_connect()` 固定按环境变量建连接，为满足“仓库中不出现环境变量配置”，
+  只读查询放在适配层；入库仍走 `store.store_source(connection, source)`，事务
+  逻辑完全来自 `store.py`。
 
 ## 自测
 
 ```powershell
-$env:PYTHONPATH='.'
 python -m unittest discover -s tests -t . -v
 ```
 
 测试不连数据库、不调用外部命令：解析器用构造的 XHTML／TSV，模型用替身函数，
 查询层直接对聚合函数断言。覆盖附件路径、指纹稳定性、兜底准入、SSE 断流、
-引文改标点、游标与筛选绑定、同机构一票、分歧与条件观点口径等。
+引文改标点、游标与筛选绑定、同机构一票、分歧与条件观点口径等。依赖
+`backend/store.py` 的用例在模块缺失时会自动跳过。
 
 ## 手册第 6 步验收对照
 
