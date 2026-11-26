@@ -3,6 +3,10 @@ from hashlib import sha256
 from pathlib import Path
 import re
 
+from mysql.connector import MySQLConnection
+from mysql.connector.errorcode import ER_DUP_ENTRY
+from mysql.connector.errors import IntegrityError
+
 
 @dataclass
 class SourceFile:
@@ -89,3 +93,91 @@ def read_file(path: Path, data_root: Path) -> SourceFile:
     return source
 
 
+def store_source(connection: MySQLConnection, source: SourceFile) -> tuple[int, str]:
+    connection.start_transaction()
+    try:
+        with connection.cursor(prepared=True) as cursor:
+            cursor.execute(
+                "SELECT 1 FROM raw_contents WHERE content_hash = %s",
+                (source.content_hash,),
+            )
+            if not cursor.fetchall():
+                cursor.execute(
+                    """
+                    INSERT INTO raw_contents
+                        (content_hash, content, byte_size, file_format, format_issue)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE content_hash = raw_contents.content_hash
+                    """,
+                    (
+                        source.content_hash,
+                        source.content,
+                        len(source.content),
+                        source.file_format,
+                        source.format_issue,
+                    ),
+                )
+
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO raw_articles
+                        (relative_path, path_key, content_hash,
+                         declared_extension, extension_mismatch)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (
+                        source.relative_path,
+                        source.path_key,
+                        source.content_hash,
+                        source.declared_extension,
+                        source.extension_mismatch,
+                    ),
+                )
+                article_id = cursor.lastrowid
+                status = "inserted"
+            except IntegrityError as error:
+                if error.errno != ER_DUP_ENTRY:
+                    raise
+
+                cursor.execute(
+                    """
+                    SELECT id, relative_path, content_hash
+                    FROM raw_articles
+                    WHERE path_key = %s
+                    FOR UPDATE
+                    """,
+                    (source.path_key,),
+                )
+                [(article_id, relative_path, current_hash)] = cursor.fetchall()
+
+                if relative_path != source.relative_path:
+                    raise ValueError("Path key matches a different relative path")
+
+                status = "skipped"
+                if current_hash != source.content_hash:
+                    cursor.execute(
+                        """
+                        UPDATE raw_articles
+                        SET content_hash = %s, extension_mismatch = %s
+                        WHERE id = %s
+                        """,
+                        (source.content_hash, source.extension_mismatch, article_id),
+                    )
+                    status = "updated"
+
+            cursor.execute(
+                """
+                INSERT INTO raw_article_versions (article_id, content_hash)
+                VALUES (%s, %s)
+                ON DUPLICATE KEY UPDATE seen_at = raw_article_versions.seen_at
+                """,
+                (article_id, source.content_hash),
+            )
+
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+
+    return article_id, status
