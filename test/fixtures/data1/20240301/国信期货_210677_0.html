@@ -1,0 +1,523 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="Keywords" content="" />
+<meta name="Description" content="" />
+<title></title>
+
+ <link href="/front/css/style.css" rel="stylesheet" type="text/css" />
+<link type="image/x-icon" href="/front/images/favicon.ico" rel="shortcut icon">
+<script type="text/javascript" src="/front/scripts/jquery.pack.js"></script>
+<script type="text/javascript" src="/front/scripts/jQuery.blockUI.js"></script>
+<script type="text/javascript" src="/front/scripts/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="/front/scripts/jquery-migrate-3.3.2.min.js"></script>
+<script type="text/javascript" src="/front/scripts/datepicker/WdatePicker.js"></script>
+<script type="text/javascript" src="/front/scripts/swfobject.js"></script>
+
+<script type="text/javascript" src="/front/scripts/jquery.SuperSlide.js"></script>
+<script type="text/javascript" src="/front/scripts/xs.js"></script>
+<script type="text/javascript" src="/front/scripts/webcall.js"></script>
+<script type="text/javascript" src="/front/scripts/adFloat.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){
+          tradCalender(); 
+	  changeCatalog();
+           daohang();
+          tankuang();
+           saoyisao();
+          //pikuang();
+});
+
+
+$(document).ready(function() {
+	$(".main_right_title a").each(function(a) {
+        $(this).click(function(){
+		$(this).addClass("on").siblings().removeClass("on");
+		$(".down_soft").eq(a).show().siblings(".down_soft").hide();	
+	})
+    });
+});
+
+//交易日历
+function tradCalender(){
+    WdatePicker({eCont:'jyrlGXQH',doubleCalendar:false,opposite:true,isShowToday:true,specialDates:null,
+			onpicked:function(dp){
+			//var dataStr=dataArr+"";
+			//if(dataStr.length>0 && dataStr.indexOf(dp.cal.getDateStr())>-1){
+				//dp是你點擊一個日期時的時期對象，JS中已經幫你處理過了的。 直接就可得到你點擊的日期
+				//openWin("/servlet/JyrlAction?jyrl_date="+dp.cal.getDateStr());
+				//window.open=("/main/headPageHK/index.shtml?jyrl_date="+dp.cal.getDateStr());
+				//var a = $("<a href='/main_hk/TradingCalendar/tradeCalendarDetail.shtml?tradeDate="+dp.cal.getDateStr()+"&catalogId=1287' target='_blank'></a>").get(0);
+				//var e = document.createEvent('MouseEvents');
+				//e.initEvent( 'click', true, true );
+				//a.dispatchEvent(e);
+			//}
+			}
+		});
+}
+
+	//左边栏目被选中
+	function changeCatalog(){
+		
+	}
+
+//导航
+function  daohang(){
+            var cur_url = location.href;//当前浏览器的路径
+		$(".nav_box ul li  a").each(function(index){
+		       if(cur_url.indexOf($(this).attr("id"))>0) {
+		    	var val=$(this).attr("class");
+		    	if ("default" == val) {
+		    		
+		    	}else{
+		    		$(this).addClass("default");//给当前栏目添加样式
+		    	}
+                                $(this).siblings().removeClass("default");//去掉当前栏目所有兄弟栏目的样式
+                                $("#index").removeClass("default");
+
+			  }
+		});
+
+                            
+
+
+}
+//扫一扫
+function  saoyisao(){
+       $(".sys").click(function(){
+                $(".ewm_box").hide();     
+	    });
+}
+//弹出框
+function  tankuang(){
+        setTimeout(function() {	
+              $(".danchuk").show();
+                }, 3000);	//时间1000=1秒
+        $("#img").click(function(){
+                $(".danchuk").hide();     
+	    });
+}
+
+//飘窗框
+function pikuang(){
+	var ad1 = new AdMove("float2022", true);
+	ad1.Run();
+}
+
+</script>
+<script type="text/javascript" > 
+var _aq = _aq || [];
+_aq.push(['_setSiteId', 10001]);_aq.push(['_setCatalogId', 20]); _aq.push(['_trackPageview']); (function() {
+var ga = document.createElement( 'script'); ga.type = 'text/javascript'; ga.async = true; /*ga.src='http://58.251.8.134:8085/stat/stat.js'; */ ga.src='https://www.guosenqh.com.cn:8085/stat/stat.js'; var s = document.getElementsByTagName( 'script')[0]; s.parentNode.insertBefore(ga, s); })();
+</script>
+</head>
+
+<body>
+<!--float start-->
+<div class="float1">
+    <div class="float1_mid clearfix">
+    	<ul>
+            <li><a href="#" class="dt">在线客服</a></li>
+            <li><a href="/main/yybzc/index.shtml" class="cc">营业网点</a></li>
+            <li><a href="/main/kfzx/cjwt/kh/index.shtml?id=1350" class="wt">常见问题</a></li>
+            <li class="bdb"><a href="#" class="back">返回顶部</a></li>
+        </ul>
+    </div>
+</div>
+<div class="float">
+    <div class="float_o" id="float_o">
+          <ul>
+								<li><a href="javascript:;" id="14">程序化交易</a></li>
+						<li><a href="javascript:;" id="21">客服咨询</a></li>
+						<li><a href="javascript:;" id="22" name="yyb">营业网点</a></li>
+
+         </ul>
+         <a href='#' class='fanhui'>返回顶部</a>
+    </div>
+    <div class="float_oo" id="float_oo">
+    	<ul>
+											<li><a href="javascript:;" id="125" title="大连营业部">大连营业部</a></li>
+								<li><a href="javascript:;" id="116" title="深圳营业部">深圳营业部</a></li>
+								<li><a href="javascript:;" id="113" title="厦门营业部">厦门营业部</a></li>
+								<li><a href="javascript:;" id="71" title="上海陆家嘴环路营业部">上海陆家嘴</a></li>
+								<li><a href="javascript:;" id="122" title="杭州营业部">杭州营业部</a></li>
+								<li><a href="javascript:;" id="119" title="北京营业部">北京营业部</a></li>
+								<li><a href="javascript:;" id="107" title="榆林营业部">榆林营业部</a></li>
+								<li><a href="javascript:;" id="104" title="山东分公司">山东分公司</a></li>
+								<li><a href="javascript:;" id="101" title="洛阳营业部">洛阳营业部</a></li>
+								<li><a href="javascript:;" id="86" title="武汉营业部">武汉营业部</a></li>
+								<li><a href="javascript:;" id="83" title="郑州营业部">郑州营业部</a></li>
+								<li><a href="javascript:;" id="74" title="东莞营业部">东莞营业部</a></li>
+								<li><a href="javascript:;" id="266" title="广东省分公司">广东省分公</a></li>
+								<li><a href="javascript:;" id="80" title="上海中山北路营业部">上海中山北</a></li>
+								<li><a href="javascript:;" id="693" title="河南分公司">河南分公司</a></li>
+								<li><a href="javascript:;" id="77" title="海南分公司">海南分公司</a></li>
+								<li><a href="javascript:;" id="806" title="舟山营业部">舟山营业部</a></li>
+								<li><a href="javascript:;" id="110" title="安徽分公司">安徽分公司</a></li>
+								<li><a href="javascript:;" id="128" title="南阳营业部">南阳营业部</a></li>
+								<li><a href="javascript:;" id="905" title="重庆分公司">重庆分公司</a></li>
+								<li><a href="javascript:;" id="813" title="温州万源路营业部">温州万源路</a></li>
+								<li><a href="javascript:;" id="925" title="青岛分公司">青岛分公司</a></li>
+								<li><a href="javascript:;" id="951" title="广州营业部">广州营业部</a></li>
+								<li><a href="javascript:;" id="948" title="佛山分公司">佛山分公司</a></li>
+								<li><a href="javascript:;" id="718" title="福建分公司">福建分公司</a></li>
+
+        </ul>
+    </div>
+</div>
+
+
+
+<div class="ewm_box">
+    <dl>
+        <dt>国信期货订阅号</dt>
+        <dd><img src="/front/images/gx_wz.jpg" /></dd>
+        <dd>  </dd>
+        <dt>国信期货服务号</dt>
+        <dd><img src="/front/images/gx_we.jpg" /></dd>
+        <dd><a href="#" class="sys">关闭</a></dd>
+    </dl>
+</div>
+<!--float end-->
+<!--head start-->
+<!---header start-->
+<div class="head_box">
+    <div class="head clearfix">
+        <div class="logo"><img src="/front/images/logo.png" /></div>
+        <div class="tel">
+        	<h4>全国客服热线&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="/main/bzzx/ysbh/index.shtml" target="_blank"><span style="color:red;">点击查看更多服务热线</span></a></h4>
+            <p>400-86-95536&nbsp;&nbsp;&nbsp;&nbsp;0755-22941888
+                 &nbsp;&nbsp;
+            </p>
+        </div>
+        <div class="ss" style="margin-right: 10px;">
+        	<a href="http://www.guosen.com.cn" target="_blank">国信证券</a>
+            <span id="head_login" style="display:none;">
+            |
+            <a href="/main/wsyyt/index.shtml" class="login_btn" style="font-size:14px;color:green;">登录</a>
+            </span>
+            <a href="#" class="fdj"></a>
+        </div>
+    </div>
+</div>
+<!---header end-->
+<!--head end-->
+<!--nav start-->
+<div class="nav_box">
+        <div class="nav">
+                            <ul class="clearfix">
+                        <li class="default"
+             >
+            <a id="index" href="/main/index/index.shtml">首页</a>
+            </li>
+                        <li  >
+            <a id="kfzx" href="/main/kfzx/index.shtml">客服中心</a>
+                <div class="class_two clearfix">
+                    <div class="cl_jz">
+                    </div>
+                                        <a href="/main/kfzx/khzy/fxts/index.shtml?id=1350" id="khzy">开户指引</a>
+                                        <a href="/main/kfzx/jyzy/jyqbd/index.shtml?id=1350" id="jyzy">交易指南</a>
+                                        <a href="/main/kfzx/pzxx/gpzxxhz/index.shtml?id=1350" id="pzxx">品种信息</a>
+                                        <a href="/main/kfzx/xjzq/dnrj/index.shtml?id=1350" id="xjzq">下载专区</a>
+                                        <a href="/main/kfzx/cjwt/kh/index.shtml?id=1350" id="cjwt">常见问题</a>
+                                        <a href="/main/kfzx/dsbm/gxqhds/index.shtml?id=1350" id="dsbm">实盘大赛</a>
+                                        <a href="/main/kfzx/yqzzlm/yqzzzlm/index.shtml?id=1350" id="yqzzlm">银期转账</a>
+                                        <a href="/main/kfzx/zxjygg/zxjygg/index.shtml?id=1350" id="zxjygg">最新交易公告</a>
+                </div>
+            </li>
+                        <li  >
+            <a id="yjzx" href="/main/yjzx/index.shtml">研究中心</a>
+                <div class="class_two clearfix">
+                    <div class="cl_jz">
+                    </div>
+                                        <a href="/main/yjzx/zp/zp_finance/index.shtml?id=1351" id="zp">早评</a>
+                                        <a href="/main/yjzx/rp/rp_finance/index.shtml?id=1351" id="rp">日评</a>
+                                        <a href="/main/yjzx/zb/zb_finance/index.shtml?id=1351" id="zb">周报</a>
+                                        <a href="/main/yjzx/yb/yb_finance/index.shtml?id=1351" id="yb">月报</a>
+                                        <a href="/main/yjzx/clzt/index.shtml?id=1351" id="clzt">策略专题</a>
+                </div>
+            </li>
+                        <li  >
+            <a id="cpzx" href="/main/cpzx/qsb/index.shtml">产品中心</a>
+                <div class="class_two clearfix">
+                    <div class="cl_jz">
+                    </div>
+                                        <a href="/main/cpzx/qsb/index.shtml?id=1352" id="qsb">交易咨询产品简介</a>
+                                        <a href="/main/cpzx/jsfht/index.shtml?id=1352" id="jsfht">金色烽火台</a>
+                                        <a href="/main/cpzx/clzx/index.shtml?id=1352" id="clzx">策略中心</a>
+                                        <a href="/main/cpzx/jzb/index.shtml?id=1352" id="jzb">程序化策略超市</a>
+                                        <a href="/main/cpzx/zslcp/index.shtml?id=1352" id="zslcp">指数类产品</a>
+                                        <a href="/main/cpzx/jsznz/index.shtml?id=1352" id="jsznz">数据宝</a>
+                                        <a href="/main/cpzx/lhrbao/index.shtml?id=1352" id="lhrbao">量化日报</a>
+                                        <a href="/main/cpzx/qqribao/index.shtml?id=1352" id="qqribao">期权日报</a>
+                                        <a href="/main/cpzx/lhdys/index.shtml?id=1352" id="lhdys">量化低延时</a>
+                                        <a href="/main/cpzx/zxpt/index.shtml?id=1352" id="zxpt">资讯平台</a>
+                </div>
+            </li>
+                        <li  >
+            <a id="zcgl" href="/main/zcgl/ywjs/index.shtml">资产管理</a>
+                <div class="class_two clearfix">
+                    <div class="cl_jz">
+                    </div>
+                                        <a href="/main/zcgl/ywjs/index.shtml?id=1353" id="ywjs">业务介绍</a>
+                                        <a href="/main/zcgl/zxpt/index.shtml?id=1353" id="zxpt">资讯平台</a>
+                                        <a href="/main/zcgl/xxgg/index.shtml?id=1353" id="xxgg">信息公告</a>
+                                        <a href="/main/zcgl/jzgg/index.shtml?id=1353" id="jzgg">净值公告</a>
+                </div>
+            </li>
+                        <li  >
+            <a id="xxkx" href="/main/xxkx/jskx/index.shtml">信息快讯</a>
+                <div class="class_two clearfix">
+                    <div class="cl_jz">
+                    </div>
+                                        <a href="/main/xxkx/jskx/index.shtml?id=1354" id="jskx">金十快讯</a>
+                                        <a href="/main/xxkx/clszx/gs/index.shtml?id=1354" id="clszx">财联社深度新闻</a>
+                </div>
+            </li>
+                        <li  >
+            <a id="tzzyd" href="/main/tzzyd/index.shtml">投资者园地</a>
+                <div class="class_two clearfix">
+                    <div class="cl_jz">
+                    </div>
+                                        <a href="/main/tzzyd/yichangjiaoyi/index.shtml?id=1355" id="yichangjiaoyi">异常交易监管</a>
+                                        <a href="/main/tzzyd/jysxz/index.shtml?id=1355" id="jysxz">交易所规则</a>
+                                        <a href="/main/tzzyd/fxq_/index.shtml?id=1355" id="fxq_">反洗钱</a>
+                                        <a href="/main/tzzyd/flfg/index.shtml?id=1355" id="flfg">法律法规</a>
+                                        <a href="/main/tzzyd/tzzbh/index.shtml?id=1355" id="tzzbh">投资者保护</a>
+                                        <a href="/main/tzzyd/sdxgl/index.shtml?id=1355" id="sdxgl">适当性管理</a>
+                                        <a href="/main/tzzyd/ljcy/index.shtml?id=1355" id="ljcy">廉洁从业</a>
+                                        <a href="/main/tzzyd/teachingBase/index.shtml?id=1355" id="teachingBase">投教基地</a>
+                </div>
+            </li>
+                        <li  >
+            <a id="zjgx" href="/main/zjgx/gsjs/index.shtml">走进国信</a>
+                <div class="class_two clearfix">
+                    <div class="cl_jz">
+                    </div>
+                                        <a href="/main/zjgx/gsjs/index.shtml?id=1356" id="gsjs">公司简介</a>
+                                        <a href="/main/zjgx/zzjg/index.shtml?id=1356" id="zzjg">组织架构</a>
+                                        <a href="/main/zjgx/gsdt/index.shtml?id=1356" id="gsdt">公司动态</a>
+                                        <a href="/main/zjgx/xxgs/index.shtml?id=1356" id="xxgs">信息公示</a>
+                                        <a href="/main/zjgx/fxq/index.shtml?id=1356" id="fxq">乡村振兴</a>
+                                        <a href="/main/zjgx/cpyc/index.shtml?id=1356" id="cpyc">诚聘英才</a>
+                </div>
+            </li>
+                        <li  >
+            <a id="yybzc" href="/main/yybzc/index.shtml">营业网点</a>
+                <div class="class_two clearfix">
+                    <div class="cl_jz">
+                    </div>
+                                        <a href="/main/yybzc/fzjg/index.shtml?id=1357" id="fzjg">分支机构</a>
+                                        <a href="/main/yybzc/ibwd/index.shtml?id=1357" id="ibwd">IB网点</a>
+                </div>
+            </li>
+            </ul>
+        </div>
+    </div>
+<!---nav end--->
+<!--grey start-->
+<div class="grey_box">
+<!--banner start-->
+<div class="banner_box2 clearfix">
+	
+</div>
+
+<!--location start-->
+<div class="location_box">
+  <div class="location clearfix">
+    	<div class="location_left_Research"><span class="lo_title">金融</span></div>
+        <div class="location_right">
+        	<a href="#" class="default">&gt;<a href="/main/yjzx/index.shtml" title="研究中心" > 研究中心</a>&gt;<a href="/main/yjzx/zp/zp_finance/index.shtml" title="早评" > 早评</a>&gt;<a href="/main/yjzx/zp/zp_finance/index.shtml" title="金融" > 金融</a></a>
+        </div>
+    </div>
+</div>
+
+<!--main start-->
+<div class="main_box">
+	<div class="main clearfix">
+    	<div class="main_left">
+        	              		 <dl>
+					 <dt  id="zp">
+						<!--锟酵凤拷锟斤拷锟斤拷start---->
+							<span class="early" id="zp">早评</span> 
+					 </dt>
+							<dd class="clearfix" id="zp2">
+										<a href="/main/yjzx/zp/zp_finance/index.shtml" class="on"  id="zp_finance">金融</a>
+										<a href="/main/yjzx/zp/zp_metal/index.shtml"   id="zp_metal">金属</a>
+										<a href="/main/yjzx/zp/zp_agriculture/index.shtml"   id="zp_agriculture">农产品</a>
+										<a href="/main/yjzx/zp/zp_energyAndChemical/index.shtml"   id="zp_energyAndChemical">能源化工</a>
+										<a href="/main/yjzx/zp/zp_minerals/index.shtml"   id="zp_minerals">煤焦钢矿系</a>
+							</dd>
+				 </dl>
+           		 <dl>
+					 <dt  id="rp">
+						<!--锟酵凤拷锟斤拷锟斤拷start---->
+							<span class="dayp" id="rp">日评</span> 
+					 </dt>
+							<dd class="clearfix" id="rp2">
+										<a href="/main/yjzx/rp/rp_finance/index.shtml" class="on"  id="rp_finance">金融</a>
+										<a href="/main/yjzx/rp/rp_metal/index.shtml"   id="rp_metal">金属</a>
+										<a href="/main/yjzx/rp/rp_agriculture/index.shtml"   id="rp_agriculture">农产品</a>
+										<a href="/main/yjzx/rp/rp_energyAndChemical/index.shtml"   id="rp_energyAndChemical">能源化工</a>
+										<a href="/main/yjzx/rp/rp_minerals/index.shtml"   id="rp_minerals">煤焦钢矿系</a>
+							</dd>
+				 </dl>
+           		 <dl>
+					 <dt  id="zb">
+						<!--锟酵凤拷锟斤拷锟斤拷start---->
+							<span class="weekp" id="zb">周报</span> 
+					 </dt>
+							<dd class="clearfix" id="zb2">
+										<a href="/main/yjzx/zb/zb_finance/index.shtml" class="on"  id="zb_finance">金融</a>
+										<a href="/main/yjzx/zb/zb_metal/index.shtml"   id="zb_metal">金属</a>
+										<a href="/main/yjzx/zb/zb_agriculture/index.shtml"   id="zb_agriculture">农产品</a>
+										<a href="/main/yjzx/zb/zb_energyAndChemical/index.shtml"   id="zb_energyAndChemical">能源化工</a>
+										<a href="/main/yjzx/zb/zb_minerals/index.shtml"   id="zb_minerals">煤焦钢矿系</a>
+							</dd>
+				 </dl>
+           		 <dl>
+					 <dt  id="yb">
+						<!--锟酵凤拷锟斤拷锟斤拷start---->
+							<span class="yearp" id="yb">月报</span> 
+					 </dt>
+							<dd class="clearfix" id="yb2">
+										<a href="/main/yjzx/yb/yb_finance/index.shtml" class="on"  id="yb_finance">金融</a>
+										<a href="/main/yjzx/yb/yb_metal/index.shtml"   id="yb_metal">金属</a>
+										<a href="/main/yjzx/yb/yb_agriculture/index.shtml"   id="yb_agriculture">农产品</a>
+										<a href="/main/yjzx/yb/yb_energyAndChemical/index.shtml"   id="yb_energyAndChemical">能源化工</a>
+										<a href="/main/yjzx/yb/yb_minerals/index.shtml"   id="yb_minerals">煤焦钢矿系</a>
+							</dd>
+				 </dl>
+           		 <dl>
+					 <dt  id="clzt">
+						<!--锟酵凤拷锟斤拷锟斤拷start---->
+							<span class="special" id="clzt"><a href="/main/yjzx/clzt/index.shtml">策略专题</a></span> 
+						<!--锟叫撅拷锟斤拷锟斤拷锟斤拷锟斤拷end---->
+					 </dt>
+				 </dl>
+ 
+        </div>
+        <div class="main_right">
+				
+	
+
+		<div>
+		<div class="jp_yyb_box">
+			<h3>国信期货国债早评20240301</h3>
+			<div class="jp_sm">
+					重要免责声明
+					本研究报告由国信期货撰写，国信期货具有中国证监会许可的期货公司交易咨询业务资格（证监许可【2012】116号），未经书面许可，任何机构和个人不得以任何形式翻版、复制、发布及分发研究报告的全部或部分给任何其他人士。如引用发布，需注明出处为国信期货，且不得对本报告进行有悖原意的引用、删节和修改。国信期货保留对任何侵权行为和有悖报告原意的引用行为进行追究的权利。 
+					报告所引用信息和数据均来源于公开资料，国信期货力求报告内容、引用资料和数据的客观与公正，但不对所引用资料和数据本身的准确性和完整性作出保证。报告中的任何观点仅代表报告撰写时的判断，仅供阅读者参考，不能作为投资研究决策的依据，不得被视为任何业务的邀约邀请或推介，也不得视为诱发从事或不从事某项交易、买入或卖出任何金融产品的具体投资建议，也不保证对作出的任何判断不会发生变更。阅读者在阅读本研究报告后发生的投资所引致的任何后果，均不可归因于本研究报告，均与国信期货及分析师无关。 
+					国信期货对于本免责声明条款具有修改权和最终解释权。
+			</div>
+			  <div>
+				<input id="videourl" type="hidden" value="" />
+				<div id="videoPlay" style="width: 690px; height: 450px;display: none;padding-bottom:10px;"></div>
+			  	<p align='' style='margin-top: 0px; margin-bottom: 0px; text-indent: 2em; text-align: justify; line-height: 2.5; font-family: 宋体; font-size: 10.5pt;'><p style='margin-top: 0px; margin-bottom: 0px; text-indent: 2em; text-align: justify; line-height: 2.5; font-family: 宋体; font-size: 10.5pt;'>国债:利率略缓和，国债多单轻仓<br>&emsp;&emsp;利率方面，前期利率在下调LPR之后，市场利率出现快速下行，国债连续创出新高。节后央行公开市场操作规模较大，调节短期货币流动性维持充足状态。通过低利率促进经济发展的力度较大。股债联动方面，节后股市连续走暖，目前股民对市场风险仍然较为警惕。风险偏好尚不构成转化状态，到随着股市成交额放量，可能性也逐步增加。国债多单减仓。国债多单减至轻仓。<br>&emsp;&emsp;操作建议：多单暂减<br>&emsp;&emsp;分析师：夏豪杰 <br>&emsp;&emsp;从业资格号：F0275768<br>&emsp;&emsp;投资咨询号：Z0003021<br>&emsp;&emsp;电话：0755-23510053<br>&emsp;&emsp;邮箱：15051@guosen.com.cn</p></p><br/>
+			  </div>
+		</div>
+		</div>
+
+
+        </div>
+    </div>
+</div>
+
+
+</div>
+<!--grey end-->
+
+<!--footer start-->
+ <!--footer start-->
+<div class="footer_box">
+	<div class="footer clearfix">
+    	<div class="footer_left">
+       	  <dl class="ml0">
+           	<dt>走进国信</dt>
+                <dd><a href="/main/zjgx/gsjs/index.shtml">公司介绍</a></dd>
+                <dd><a href="/main/zjgx/xxgs/index.shtml">信息公示</a></dd>
+                <dd><a href="/main/zjgx/cpyc/index.shtml">诚聘英才</a></dd>
+                <dd><a href="/main/kfzx/xjzq/dnrj/index.shtml">下载专区</a></dd>
+            </dl>
+            <dl>
+            	<dt>风险教育</dt>
+                <dd><a href="/main/tzzyd/tzzbh/index.shtml">投资者保护</a></dd>
+                <dd><a href="/main/zjgx/fxq/index.shtml">反洗钱</a></dd>
+                <dd><a href="/main/tzzyd/jysxz/index.shtml">交易所规则</a></dd>
+                <dd><a href="/main/tzzyd/flfg/index.shtml">法律法规</a></dd>
+            </dl>
+            <dl>
+           	<dt>资讯中心</dt>
+                <dd><a href="/main/xwzx/qsdt/index.shtml?id=1379">期市动态</a></dd>
+                <dd><a href="/main/xwzx/gjcj/index.shtml?id=1559">宏观财经</a></dd>
+                <dd><a href="/main/kfzx/pzxx/gpzbzj/index.shtml">品种资讯</a></dd>
+          </dl>
+            <dl>
+            	<dt>帮助中心</dt>
+                <dd><a href="/main/bzzx/wzsm/index.shtml">免责条款</a></dd>
+                <dd><a href="/main/bzzx/ysbh/index.shtml">联系我们</a></dd>
+                <dd><a href="https://woa.guosen.com.cn" target="_blank">办公系统</a></dd>
+                <dd><a href="/main/bzzx/wzdt/index.shtml" target="_blank">网站地图</a></dd>
+                <dd><a href="http://new.cnzz.com/v1/login.php?siteid=2370496" target="_blank">站长统计</a></dd>
+            </dl>
+            <dl>
+            	<dt>友情链接</dt>
+                <dd><a href="http://www.cfachina.org/" target="_blank">中国期货业协会</a></dd>
+                <dd><a href="http://www.cfmmc.com/" target="_blank">中国期货市场监控中心</a></dd>
+                <dd><a href="http://www.cffex.com.cn/" target="_blank">中国金融期货交易所</a></dd>
+                <dd><a href="http://www.shfe.com.cn/" target="_blank">上海期货交易所</a></dd>
+                <dd><a href="http://www.czce.com.cn/" target="_blank">郑州商品交易所</a></dd>
+                <dd><a href="http://www.dce.com.cn/" target="_blank">大连商品交易所</a></dd>
+                <dd><a href="http://www.ine.cn/" target="_blank">上海国际能源交易中心</a></dd>
+            </dl>
+            <dl>
+            	<dt>意见反馈</dt>
+                <dd>投诉电话：4008695536</dd>
+                <dd>传真：0755-83221342</dd>
+                <dd>投诉信访专用邮箱：15123@guosen.com.cn</dd>
+            </dl>
+            <dl>
+            	<dt>
+                	<span>分享 :</span>
+                        <!-- JiaThis Button BEGIN -->
+                        <div id="ckepop">
+                	<a class="jiathis_button_weixin">微信</a> 
+                	<a href=""  class="jiathis jiathis_txt jiathis_separator jtico jtico_jiathis" target="_blank">更多</a>
+                	<a class="jiathis_counter_style"></a></div>
+                        </div>
+                        <!-- JiaThis Button END -->
+                </dt>      
+            </dl>
+        </div>
+    </div>
+    <div class="footer_bok clearfix">
+    	<div class="footer_bok_left">
+            Copyright 国信期货有限责任公司 版权所有&nbsp;&nbsp;&nbsp;&nbsp;
+            <span style="font-size:14px; color:#e4552d">期市有风险 入市须谨慎</span>&nbsp;&nbsp;&nbsp;&nbsp;
+            <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank">[粤ICP备15061621号 广东省通信管理局]</a>&nbsp;&nbsp;
+            <a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31022102000190" target="_blank">[沪公网安备 31022102000190号]</a>&nbsp;&nbsp;&nbsp;
+            <span style=" color:#e4552d">本站已支持IPv6访问</span>
+        </div>
+
+        <div class="footer_bok_right fl ml0">
+            <a href="" target="_blank" class="one"></a>
+            <a href="" target="_blank" class="two"></a>
+        </div>
+
+    </div>
+</div>
+ <!--footer end-->
+   <script>
+		var _defaultPage = {
+			"pageCode" : "yjzx/articleList",
+			"jsonParam" : {},
+			"isLoad" : false,
+			"loadType" : "1"
+		};
+	</script>
+	<script type="text/javascript" src="/front/version.js"></script>
+	<script type="text/javascript" src="/thinkiveJs.min.js"></script>
+</body>
+</html>
