@@ -2,6 +2,7 @@ import json
 import os
 import re
 from argparse import ArgumentParser
+from contextlib import suppress
 from dataclasses import asdict, dataclass
 from datetime import date, datetime
 from hashlib import sha256
@@ -117,13 +118,8 @@ def read_file(path: Path, data_root: Path) -> SourceFile:
     """
     path = path.resolve()
     relative_path = path.relative_to(data_root.resolve()).as_posix()
-    buffer = BytesIO()
-    digest = sha256()
-    with path.open("rb") as stream:
-        while chunk := stream.read(1024 * 1024):
-            buffer.write(chunk)
-            digest.update(chunk)
-    content = buffer.getvalue()
+    content = path.read_bytes()
+    digest = sha256(content)
     file_format, format_issue = detect_format(content[:8192])
     extension = path.suffix.lower().removeprefix(".")
     return SourceFile(
@@ -139,7 +135,15 @@ def read_file(path: Path, data_root: Path) -> SourceFile:
 
 
 def discover_files(data_root: Path = DATA_ROOT) -> list[Path]:
-    """Find supported files under data1 and data2 in normalized path order."""
+    """
+    Find supported files under data1 and data2 in normalized path order.
+
+    Args:
+        data_root (Path): The root directory to search for files.·
+
+    Returns:
+        list[Path]: A sorted list of Path objects representing the discovered files.
+    """
     root = data_root.resolve()
     if not root.is_dir():
         raise FileNotFoundError(root)
@@ -296,18 +300,40 @@ def _connect() -> MySQLConnection:
     )
 
 
-def ingest_file(path: str | Path, *, data_root: Path = DATA_ROOT) -> IngestResult:
-    """Read a file under data_root and commit its content and version."""
-    source = read_file(Path(path), data_root)
-    with _connect() as connection:
-        article_id, status = store_source(connection, source)
+def _ingest_source(connection: MySQLConnection, source: SourceFile) -> IngestResult:
+    article_id, status = store_source(connection, source)
     return IngestResult(
         article_id, source.relative_path, source.content_hash.hex(), source.file_format, status
     )
 
 
+def ingest_file(path: str | Path, *, data_root: Path = DATA_ROOT) -> IngestResult:
+    """
+    Read a file under data_root and commit its content and version.
+
+    Args:
+        path (str | Path): The path to the file to ingest.
+        data_root (Path): The root directory to which the file path is relative.
+
+    Returns:
+        IngestResult: An object containing the article ID, relative path, content hash, format, and status of the ingestion operation.
+    """
+    source = read_file(Path(path), data_root)
+    with _connect() as connection:
+        return _ingest_source(connection, source)
+
+
 def load_article(article_id: int, content_hash: str | None = None) -> RawArticle:
-    """Return the current article or a version belonging to that article."""
+    """
+    Return the current article or a version belonging to that article.
+    
+    Args:
+        article_id (int): The ID of the article to load.
+        content_hash (str | None): Optional SHA-256 hex string of the content hash to load a specific version.
+
+    Returns:
+        RawArticle: An object containing the article's metadata and content.
+    """
     query = """
         SELECT a.id, a.relative_path, c.content_hash, c.file_format, c.content,
                a.collected_on, a.institution_hint, c.format_issue, a.declared_extension
@@ -352,7 +378,15 @@ def load_article(article_id: int, content_hash: str | None = None) -> RawArticle
 
 
 def find_article_id(relative_path: str) -> int | None:
-    """Find the article ID for an exact normalized path under the data root."""
+    """
+    Find the article ID for an exact normalized path under the data root.
+    
+    Args:
+        relative_path (str): The normalized relative path of the article.
+
+    Returns:
+        int | None: The article ID if found, otherwise None.
+    """
     path_key = sha256(relative_path.encode("utf-8")).digest()
     with _connect() as connection, connection.cursor(prepared=True) as cursor:
         cursor.execute(
@@ -378,18 +412,34 @@ def main() -> int:
         parser.error(f"Data root is not a directory: {root}")
 
     had_errors = False
-    for path in discover_files(root):
-        relative_path = path.relative_to(root).as_posix()
-        if args.dry_run:
-            result = {"relative_path": relative_path, "status": "discovered"}
-        else:
-            try:
-                result = asdict(ingest_file(path, data_root=root))
-            except (MySQLError, OSError, ValueError) as error:
-                had_errors = True
-                error_code = f"mysql_{error.errno}" if isinstance(error, MySQLError) else type(error).__name__
-                result = {"relative_path": relative_path, "status": "error", "error_code": error_code}
-        print(json.dumps(result))
+    connection = None
+    try:
+        for path in discover_files(root):
+            relative_path = path.relative_to(root).as_posix()
+            if args.dry_run:
+                result = {"relative_path": relative_path, "status": "discovered"}
+            else:
+                try:
+                    source = read_file(path, root)
+                    if connection is None:
+                        connection = _connect()
+                    result = asdict(_ingest_source(connection, source))
+                except (MySQLError, OSError, ValueError) as error:
+                    had_errors = True
+                    error_code = type(error).__name__
+                    if isinstance(error, MySQLError):
+                        error_code = f"mysql_{error.errno}"
+                        if connection is not None:
+                            with suppress(MySQLError, OSError):
+                                connection.close()
+                            connection = None
+                    result = {
+                        "relative_path": relative_path, "status": "error", "error_code": error_code
+                    }
+            print(json.dumps(result))
+    finally:
+        if connection is not None:
+            connection.close()
     return int(had_errors)
 
 
