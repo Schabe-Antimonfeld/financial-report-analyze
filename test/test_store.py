@@ -19,9 +19,15 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 @pytest.mark.parametrize(
     ("relative_path", "expected_format"),
     [
-        ("data1/20240305/华鑫期货_211752.PDF", "pdf"),
         ("data1/20240301/国信期货_210677_0.html", "html"),
+        ("data1/20240305/华鑫期货_211752.PDF", "pdf"),
         ("data1/20240305/华鑫期货_211752_page1.png", "png"),
+        ("data1/20240308/宏源期货_213132_0.html", "html"),
+        ("data1/20240315/华泰期货_215145.PDF", "pdf"),
+        ("data2/20240317/广金期货_216143.PDF", "pdf"),
+        ("data2/20240325/东吴期货_218298.PDF", "pdf"),
+        ("data2/20240327/宏源期货_218892_0.html", "html"),
+        ("data2/20240329/宏源期货_219421_0.html", "html"),
     ],
 )
 def test_read_file(relative_path, expected_format):
@@ -49,3 +55,5 @@ def test_read_file_mismatch(tmp_path):
     assert source.declared_extension == "pdf"
     assert source.file_format == "html"
     assert source.extension_mismatch is True
+
+
