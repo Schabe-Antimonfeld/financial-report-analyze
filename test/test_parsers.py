@@ -474,5 +474,57 @@ class PNGExtractTests(unittest.TestCase):
         self.assertEqual([issue.code for issue in result.issues], ["ocr_failed"])
 
 
+class WeChatVisibilityTest(unittest.TestCase):
+    """微信正文容器初始隐藏时的正文提取。"""
+
+    def test_visibility_hidden_content_is_kept(self) -> None:
+        """``#js_content`` 带 ``visibility:hidden`` 时仍应抽取正文。"""
+        html = (
+            '<html><body><nav>首页</nav>'
+            '<div id="js_content" style="visibility: hidden;">'
+            "<h2>铁矿石</h2>"
+            "<p>预计本周矿价维持震荡运行。</p>"
+            "</div></body></html>"
+        )
+        result = extract_html(_article(html.encode("utf-8"), "html"))
+        texts = [block.text for block in result.blocks]
+        self.assertIn("铁矿石", texts)
+        self.assertTrue(any("预计本周矿价" in text for text in texts))
+        self.assertFalse(any("首页" in text for text in texts))
+        self.assertEqual(result.issues, [])
+
+
+class TableRowLabelFallbackTest(unittest.TestCase):
+    """首列为品种时用最左单元格兜底行标签。"""
+
+    def test_first_column_cell_becomes_row_label(self) -> None:
+        """``<td>股指</td>`` 不是 ``th``，也应成为该行的 row_label。"""
+        html = (
+            "<html><body><div id=\"js_content\">"
+            "<table>"
+            "<tr><th>品种</th><th>分析要点</th><th>团队</th></tr>"
+            "<tr><td>股指</td><td>四组期指偏强震荡。</td><td>宏观团队</td></tr>"
+            "<tr><td>铜及国际铜</td><td>沪铜震荡为主。</td><td>金属团队</td></tr>"
+            "</table>"
+            "</div></body></html>"
+        )
+        result = extract_html(_article(html.encode("utf-8"), "html"))
+        labels = {
+            block.table["row_label"]
+            for block in result.blocks
+            if block.kind == "table_cell" and block.table is not None
+        }
+        self.assertIn("股指", labels)
+        self.assertIn("铜及国际铜", labels)
+        analysis = next(
+            block
+            for block in result.blocks
+            if block.kind == "table_cell" and "四组期指" in block.text
+        )
+        self.assertEqual(analysis.table["row_label"], "股指")
+        self.assertEqual(analysis.table["row"], 2)
+        self.assertEqual(analysis.table["col"], 2)
+
+
 if __name__ == "__main__":
     unittest.main()

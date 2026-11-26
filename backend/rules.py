@@ -62,56 +62,95 @@ DIRECTION_PHRASES = sorted(DIRECTIONS, key=lambda item: (-len(item), item))
 DIRECTION_PATTERN = re.compile("|".join(re.escape(phrase) for phrase in DIRECTION_PHRASES))
 
 # 品种词表：别名按长度降序匹配，代码用于合约规范化。
+def _product(
+    product_id: str,
+    name: str,
+    aliases: list[str],
+    exchange: str,
+    code: str,
+) -> dict[str, Any]:
+    """构造一个品种词表条目。
+
+    :param product_id: 标准品种 ID。
+    :param name: 中文名。
+    :param aliases: 用于正文匹配的别名。
+    :param exchange: 交易所。
+    :param code: 合约代码前缀。
+    :return: 词表字典。
+    """
+    return {
+        "product_id": product_id,
+        "name": name,
+        "aliases": aliases,
+        "exchange": exchange,
+        "code": code,
+    }
+
+
 PRODUCTS: list[dict[str, Any]] = [
-    {
-        "product_id": "cu",
-        "name": "铜",
-        "aliases": ["沪铜", "铜"],
-        "exchange": "SHFE",
-        "code": "CU",
-    },
-    {
-        "product_id": "iron_ore",
-        "name": "铁矿石",
-        "aliases": ["铁矿石", "铁矿", "连铁"],
-        "exchange": "DCE",
-        "code": "I",
-    },
-    {
-        "product_id": "zn",
-        "name": "锌",
-        "aliases": ["沪锌", "锌"],
-        "exchange": "SHFE",
-        "code": "ZN",
-    },
-    {
-        "product_id": "al",
-        "name": "铝",
-        "aliases": ["沪铝", "铝"],
-        "exchange": "SHFE",
-        "code": "AL",
-    },
-    {
-        "product_id": "au",
-        "name": "黄金",
-        "aliases": ["沪金", "黄金"],
-        "exchange": "SHFE",
-        "code": "AU",
-    },
-    {
-        "product_id": "ag",
-        "name": "白银",
-        "aliases": ["沪银", "白银"],
-        "exchange": "SHFE",
-        "code": "AG",
-    },
-    {
-        "product_id": "rb",
-        "name": "螺纹钢",
-        "aliases": ["螺纹钢", "螺纹"],
-        "exchange": "SHFE",
-        "code": "RB",
-    },
+    _product("cu", "铜", ["沪铜", "铜"], "SHFE", "CU"),
+    _product("al", "铝", ["沪铝", "电解铝", "铝"], "SHFE", "AL"),
+    _product("ao", "氧化铝", ["氧化铝"], "SHFE", "AO"),
+    _product("zn", "锌", ["沪锌", "锌"], "SHFE", "ZN"),
+    _product("pb", "铅", ["沪铅", "铅"], "SHFE", "PB"),
+    _product("ni", "镍", ["沪镍", "镍"], "SHFE", "NI"),
+    _product("sn", "锡", ["沪锡", "锡"], "SHFE", "SN"),
+    _product("au", "黄金", ["沪金", "黄金"], "SHFE", "AU"),
+    _product("ag", "白银", ["沪银", "白银"], "SHFE", "AG"),
+    _product("rb", "螺纹钢", ["螺纹钢", "螺纹"], "SHFE", "RB"),
+    _product("hc", "热卷", ["热轧卷板", "热卷"], "SHFE", "HC"),
+    _product("ss", "不锈钢", ["不锈钢"], "SHFE", "SS"),
+    _product("bu", "沥青", ["石油沥青", "沥青"], "SHFE", "BU"),
+    _product("fu", "燃料油", ["燃料油", "燃油"], "SHFE", "FU"),
+    _product("lu", "低硫燃料油", ["低硫燃料油"], "INE", "LU"),
+    _product("sp", "纸浆", ["纸浆"], "SHFE", "SP"),
+    _product("ru", "天然橡胶", ["天然橡胶", "橡胶", "沪胶"], "SHFE", "RU"),
+    _product("br", "丁二烯橡胶", ["丁二烯橡胶", "合成橡胶"], "SHFE", "BR"),
+    _product("sc", "原油", ["原油"], "INE", "SC"),
+    _product("nr", "20号胶", ["20号胶"], "INE", "NR"),
+    _product("bc", "国际铜", ["国际铜"], "INE", "BC"),
+    _product("iron_ore", "铁矿石", ["铁矿石", "铁矿", "连铁"], "DCE", "I"),
+    _product("j", "焦炭", ["焦炭"], "DCE", "J"),
+    _product("jm", "焦煤", ["焦煤"], "DCE", "JM"),
+    _product("m", "豆粕", ["豆粕"], "DCE", "M"),
+    _product("y", "豆油", ["豆油"], "DCE", "Y"),
+    _product("p", "棕榈油", ["棕榈油"], "DCE", "P"),
+    _product("c", "玉米", ["玉米"], "DCE", "C"),
+    _product("cs", "玉米淀粉", ["玉米淀粉", "淀粉"], "DCE", "CS"),
+    _product("lh", "生猪", ["生猪"], "DCE", "LH"),
+    _product("jd", "鸡蛋", ["鸡蛋"], "DCE", "JD"),
+    _product("eg", "乙二醇", ["乙二醇"], "DCE", "EG"),
+    _product("pp", "聚丙烯", ["聚丙烯"], "DCE", "PP"),
+    _product("l", "聚乙烯", ["聚乙烯", "塑料"], "DCE", "L"),
+    _product("v", "聚氯乙烯", ["聚氯乙烯", "PVC"], "DCE", "V"),
+    _product("eb", "苯乙烯", ["苯乙烯"], "DCE", "EB"),
+    _product("pg", "液化石油气", ["液化石油气", "LPG"], "DCE", "PG"),
+    _product("ma", "甲醇", ["甲醇"], "CZCE", "MA"),
+    _product("ta", "PTA", ["精对苯二甲酸", "PTA"], "CZCE", "TA"),
+    _product("sr", "白糖", ["白糖", "郑糖"], "CZCE", "SR"),
+    _product("cf", "棉花", ["棉花", "郑棉"], "CZCE", "CF"),
+    _product("oi", "菜油", ["菜籽油", "菜油"], "CZCE", "OI"),
+    _product("rm", "菜粕", ["菜籽粕", "菜粕"], "CZCE", "RM"),
+    _product("fg", "玻璃", ["玻璃"], "CZCE", "FG"),
+    _product("sa", "纯碱", ["纯碱"], "CZCE", "SA"),
+    _product("ur", "尿素", ["尿素"], "CZCE", "UR"),
+    _product("ap", "苹果", ["苹果"], "CZCE", "AP"),
+    _product("cj", "红枣", ["红枣"], "CZCE", "CJ"),
+    _product("pk", "花生", ["花生"], "CZCE", "PK"),
+    _product("pf", "短纤", ["涤纶短纤", "短纤"], "CZCE", "PF"),
+    _product("sm", "锰硅", ["锰硅"], "CZCE", "SM"),
+    _product("sf", "硅铁", ["硅铁"], "CZCE", "SF"),
+    _product("si", "工业硅", ["工业硅"], "GFEX", "SI"),
+    _product("lc", "碳酸锂", ["碳酸锂"], "GFEX", "LC"),
+    _product("ps", "多晶硅", ["多晶硅"], "GFEX", "PS"),
+    _product("if", "沪深300股指", ["沪深300", "股指", "期指"], "CFFEX", "IF"),
+    _product("ih", "上证50股指", ["上证50"], "CFFEX", "IH"),
+    _product("ic", "中证500股指", ["中证500"], "CFFEX", "IC"),
+    _product("im", "中证1000股指", ["中证1000"], "CFFEX", "IM"),
+    _product("t", "十年国债", ["十年国债", "国债"], "CFFEX", "T"),
+    _product("tf", "五年国债", ["五年国债"], "CFFEX", "TF"),
+    _product("ts", "两年国债", ["两年国债"], "CFFEX", "TS"),
+    _product("tl", "三十年国债", ["三十年国债"], "CFFEX", "TL"),
 ]
 PRODUCT_BY_ID = {product["product_id"]: product for product in PRODUCTS}
 PRODUCT_BY_CODE = {product["code"]: product for product in PRODUCTS}
@@ -161,7 +200,10 @@ NEGATION_PATTERN = re.compile(
     r"不看(?:涨|跌|多|空|好)|不看好|"
     r"不(?:会|太|宜)(?:上涨|下跌|看涨|看跌|看多|看空)|"
     r"未必(?:会)?(?:上涨|下跌|涨|跌)|难以(?:上涨|下跌)|"
-    r"不(?:上涨|下跌)"
+    r"不(?:上涨|下跌)|"
+    r"(?:缺乏|缺少|没有)(?:上涨|下跌)(?:动力|空间)|"
+    r"(?:上涨|下跌)(?:动力|空间)(?:不足|有限)|"
+    r"不具备(?:上涨|下跌)(?:条件|动力|空间)?"
 )
 
 # 语境、时态与等级标记。
@@ -479,6 +521,8 @@ def _apply_table_cell(block: Block, state: _RuleState) -> None:
     headers = table.get("headers") or []
     row_label = normalize_text(str(table.get("row_label") or ""))
     product_id = _match_product(row_label)
+    if product_id is None:
+        product_id = _match_product(normalize_text(block.text))
     raw_contract = str(table.get("contract_text") or "")
     contract = _normalize_contract(raw_contract, product_id)
     if contract is None and row_label:

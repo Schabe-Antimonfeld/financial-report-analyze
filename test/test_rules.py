@@ -442,5 +442,59 @@ class TestTableContractNormalization(unittest.TestCase):
         self.assertEqual(scope.scope_id, "cu||short_term")
 
 
+class TestProductDisambiguation(unittest.TestCase):
+    """品种别名歧义与新词表覆盖。"""
+
+    def _scopes(self, text: str, heading: str) -> list[Any]:
+        """跑一遍规则并返回范围列表。
+
+        :param text: 正文。
+        :param heading: 标题路径。
+        :return: 范围列表。
+        """
+        blocks = [_block("b-0001", 1, "paragraph", text, heading_path=[heading])]
+        return extract_opinions(blocks, ReportMetadata()).scopes
+
+    def test_alumina_is_not_aluminum(self) -> None:
+        """「氧化铝」应归到 ``ao``，不能误匹配成 ``al``。"""
+        scopes = self._scopes("氧化铝方面，预计短期偏强。", "氧化铝")
+        scope_ids = [scope.scope_id for scope in scopes]
+        self.assertTrue(any(scope.startswith("ao|") for scope in scope_ids))
+        self.assertFalse(any(scope.startswith("al|") for scope in scope_ids))
+
+    def test_new_products_are_recognized(self) -> None:
+        """甲醇、生猪、国际铜、低硫燃料油都能识别。"""
+        cases = {
+            "甲醇预计上涨，生猪维持震荡。": ("ma|", "lh|"),
+            "国际铜预计上涨，低硫燃料油偏弱。": ("bc|", "lu|"),
+        }
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                scope_ids = [scope.scope_id for scope in self._scopes(text, "品种")]
+                for prefix in expected:
+                    self.assertTrue(any(item.startswith(prefix) for item in scope_ids))
+
+    def test_longer_alias_wins(self) -> None:
+        """「玉米淀粉」不被截成「玉米」。"""
+        scope_ids = [scope.scope_id for scope in self._scopes("玉米淀粉预计上涨。", "品种")]
+        self.assertTrue(any(item.startswith("cs|") for item in scope_ids))
+        self.assertFalse(any(item.startswith("c|") for item in scope_ids))
+
+    def test_limited_momentum_is_not_bullish(self) -> None:
+        """「缺乏上涨动力」「上涨空间有限」不得记成看多。"""
+        cases = [
+            ("电解铝短线受消费压制缺乏上涨动力。", "铝"),
+            ("铜价上涨动力不足。", "铜"),
+            ("预计铜价上涨空间有限。", "铜"),
+        ]
+        for text, heading in cases:
+            with self.subTest(text=text):
+                scopes = self._scopes(text, heading)
+                self.assertFalse(any(scope.direction == "bullish" for scope in scopes))
+                self.assertTrue(
+                    any(scope.reason_code == "negated_view" for scope in scopes)
+                )
+
+
 if __name__ == "__main__":
     unittest.main()
