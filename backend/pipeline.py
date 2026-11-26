@@ -55,7 +55,7 @@ from backend.models import (
     ScopeResult,
 )
 from backend.parsers import extract_blocks
-from backend.raw_store import find_article_id, load_article
+from backend.repository import find_article_id, load_article
 from backend.rules import extract_metadata, extract_opinions
 from backend.textutil import sha256_hex, canonical_json
 
@@ -628,7 +628,7 @@ def discover_article_ids(
     :param settings: 运行配置。
     :return: 文章 ID 列表。
     """
-    from backend.raw_store import list_article_ids
+    from backend.repository import list_article_ids
 
     return list_article_ids(limit=limit, settings=settings)
 

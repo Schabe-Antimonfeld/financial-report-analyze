@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from backend.config import Settings, get_settings
+from backend.config import Settings, load_settings
 from backend.errors import BackendError
 from backend.pipeline import (
     analyze_article,
@@ -30,7 +30,7 @@ from backend.pipeline import (
     preview_scope,
     preview_tasks,
 )
-from backend.raw_store import ingest_file, iter_discovered_files, probe_file
+from backend.repository import ingest_file, iter_discovered_files, probe_file
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,6 +48,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--verbose",
         action="store_true",
         help="输出调试日志",
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="配置文件路径，默认仓库根目录 config.local.json",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -344,6 +350,9 @@ def _write_lines(items: list[dict[str, Any]], output: Path) -> None:
 def run_api(args: argparse.Namespace, settings: Settings) -> int:
     """启动 FastAPI 服务。
 
+    ``--reload`` 时由 uvicorn 重新导入 ``backend.api:app``，该入口读取默认的
+    ``config.local.json``；不使用 reload 时直接传入当前配置。
+
     :param args: 解析后的参数。
     :param settings: 运行配置。
     :return: 进程退出码。
@@ -353,11 +362,20 @@ def run_api(args: argparse.Namespace, settings: Settings) -> int:
     except ImportError:
         print("未安装 uvicorn，请执行 pip install -r requirements.txt", file=sys.stderr)
         return 1
+    if args.reload:
+        uvicorn.run(
+            "backend.api:app",
+            host=args.host,
+            port=args.port,
+            reload=True,
+        )
+        return 0
+    from backend.api import create_app
+
     uvicorn.run(
-        "backend.api:app",
+        create_app(settings),
         host=args.host,
         port=args.port,
-        reload=args.reload,
     )
     return 0
 
@@ -371,7 +389,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     _configure_logging(args.verbose)
-    settings = get_settings()
+    try:
+        settings = load_settings(args.config)
+    except BackendError as error:
+        print(f"读取配置失败：{error.message}", file=sys.stderr)
+        return 1
     if args.command == "ingest":
         return run_ingest(args, settings)
     if args.command == "analyze":

@@ -15,7 +15,7 @@ from typing import Any
 from backend.config import Settings, get_settings
 from backend.db import open_connection
 from backend.errors import CursorError
-from backend.raw_store import load_article
+from backend.repository import load_article
 from backend.textutil import canonical_json, sha256_hex
 
 UNKNOWN_SORT_DAY = datetime.date(1000, 1, 1)
