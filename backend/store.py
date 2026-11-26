@@ -94,6 +94,16 @@ def read_file(path: Path, data_root: Path) -> SourceFile:
 
 
 def store_source(connection: MySQLConnection, source: SourceFile) -> tuple[int, str]:
+    '''
+    Store the given SourceFile object in the database.
+    
+    Args:
+        connection (MySQLConnection): The MySQL database connection.
+        source (SourceFile): The SourceFile object to store.
+
+    Returns:
+        tuple[int, str]: A tuple containing the article ID and the status of the operation ("inserted", "skipped", or "updated").
+    '''
     connection.start_transaction()
     try:
         with connection.cursor(prepared=True) as cursor:
