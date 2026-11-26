@@ -1,0 +1,22 @@
+{
+  "source": "rule",
+  "points": [
+    {
+      "date": "2024-03-01",
+      "period_definition": "<=1w",
+      "bullish_count": 1,
+      "bearish_count": 0,
+      "range_count": 0,
+      "mixed_count": 0,
+      "unresolved_count": 0,
+      "conditional_count": 0,
+      "report_count": 1,
+      "institution_count": 1,
+      "ratios": {
+        "bullish": 1.0,
+        "bearish": 0.0,
+        "range": 0.0
+      }
+    }
+  ]
+}
