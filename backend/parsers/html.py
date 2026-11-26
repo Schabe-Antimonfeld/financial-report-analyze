@@ -47,6 +47,7 @@ MULTI_BREAKS = re.compile(r"\u2028+")
 KNOWN_HEADING = re.compile(r"^已知品种[:：]$")
 SHORT_HEADING = re.compile(r"^.{1,20}[:：]$")
 CONTRACT = re.compile(r"[A-Za-z]{1,2}\d{4}")
+ROW_LABEL_HEADERS = ("品种", "合约", "标的", "名称", "代码")
 CHARSET_VALUE = re.compile(
     r"""charset\s*=\s*["']?([^;"'\s]+)""",
     re.IGNORECASE,
@@ -332,13 +333,17 @@ def _build_dom(text: str) -> _DomNode:
 def _is_hidden(node: _DomNode) -> bool:
     """判断元素是否被隐藏。
 
+    只把 ``hidden`` 属性和 ``display:none`` 当作隐藏；``visibility:hidden`` 不参与
+    判断，因为微信正文容器 ``#js_content`` 初始就是 ``visibility: hidden``，由页面
+    脚本在加载后显示，按可见性过滤会把整篇正文丢掉。
+
     :param node: DOM 节点。
-    :return: 含 ``hidden`` 或隐藏样式时为 ``True``。
+    :return: 含 ``hidden`` 或 ``display:none`` 时为 ``True``。
     """
     if "hidden" in node.attrs:
         return True
     style = re.sub(r"\s+", "", node.attrs.get("style", "").lower())
-    return "display:none" in style or "visibility:hidden" in style
+    return "display:none" in style
 
 
 def _prune(node: _DomNode) -> None:
@@ -705,6 +710,14 @@ def _table_blocks(
         else:
             break
 
+    first_header = ""
+    if header_rows:
+        for header_cell in sorted(by_row.get(0, []), key=lambda item: item.col):
+            if header_cell.col == 0:
+                first_header = _inline_text(header_cell.spec.node)
+                break
+    has_row_header = any(word in first_header for word in ROW_LABEL_HEADERS)
+
     blocks: list[Block] = []
     for placement in placements:
         cell = placement.spec.node
@@ -731,6 +744,18 @@ def _table_blocks(
                 if row_cell.spec.node.tag == "th" or scope == "row":
                     row_label = _inline_text(row_cell.spec.node) or None
                     break
+            if row_label is None and has_row_header:
+                left_cells = [
+                    item
+                    for item in sorted(
+                        by_row.get(row, []), key=lambda item: item.col
+                    )
+                    if item.col == 0
+                ]
+                if left_cells:
+                    left_text = _inline_text(left_cells[0].spec.node).strip()
+                    if left_text and len(left_text) <= 30:
+                        row_label = left_text
         text = _inline_text(cell)
         table_data = {
             "row": row + 1,
