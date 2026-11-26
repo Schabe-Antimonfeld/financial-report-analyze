@@ -23,6 +23,7 @@ DIRECTIONS = ("bullish", "bearish", "range")
 SOURCES = ("rule", "llm")
 REVIEW_STATES = ("recognized", "unresolved", "review")
 CONDITIONAL_STATEMENTS = ("conditional", "scenario")
+VOTING_STATEMENTS = ("unconditional",)
 
 
 @dataclass(frozen=True)
@@ -385,6 +386,7 @@ def aggregate_trends(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "institution": institution,
                 "reports": 0,
                 "directions": set(),
+                "has_mixed": False,
                 "has_conditional": False,
                 "has_unresolved": False,
             },
@@ -392,9 +394,15 @@ def aggregate_trends(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         bucket["reports"] += 1
         if outcome["direction"]:
             bucket["directions"].add(outcome["direction"])
+        if outcome["mixed"]:
+            bucket["has_mixed"] = True
         if outcome["conditional"]:
             bucket["has_conditional"] = True
-        if outcome["direction"] is None and not outcome["conditional"]:
+        if (
+            outcome["direction"] is None
+            and not outcome["conditional"]
+            and not outcome["mixed"]
+        ):
             bucket["has_unresolved"] = True
 
     points: dict[tuple[datetime.date, str | None], dict[str, Any]] = {}
@@ -417,7 +425,7 @@ def aggregate_trends(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         point["report_count"] += bucket["reports"]
         point["institution_count"] += 1
         directions = bucket["directions"]
-        if len(directions) > 1:
+        if bucket["has_mixed"] or len(directions) > 1:
             point["mixed_count"] += 1
         elif len(directions) == 1:
             direction = next(iter(directions))
@@ -462,8 +470,13 @@ def _report_outcome(rows: list[dict[str, Any]]) -> dict[str, Any]:
     :return: 含 ``direction``、``conditional``、``definition`` 的结论。
     """
     definition = rows[0].get("period_definition")
-    product_level = [row for row in rows if not row.get("contract_key")]
-    candidates = product_level or rows
+    voting = [
+        row
+        for row in rows
+        if row.get("statement_type") in VOTING_STATEMENTS
+    ]
+    product_level = [row for row in voting if not row.get("contract_key")]
+    candidates = product_level or voting
     directions = {
         str(row["direction"])
         for row in candidates

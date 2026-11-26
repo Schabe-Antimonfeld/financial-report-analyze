@@ -423,7 +423,7 @@ def infer_direction(
     """
     active_settings = settings or get_settings()
     fallback_settings = active_settings.fallback
-    if not fallback_settings.enabled:
+    if completion is None and not fallback_settings.enabled:
         return FallbackResult(
             scope_id=task.scope_id,
             status="error",

@@ -151,6 +151,44 @@ class AggregateTrendsTest(unittest.TestCase):
         self.assertEqual(point["institution_count"], 1)
         self.assertEqual(point["report_count"], 2)
 
+    def test_conditional_direction_is_coverage_only(self) -> None:
+        """条件观点即使有方向也不进入多空分母。"""
+        point = aggregate_trends(
+            [make_row(direction="bullish", statement="conditional")]
+        )[0]
+        self.assertEqual(point["bullish_count"], 0)
+        self.assertEqual(point["conditional_count"], 1)
+        self.assertEqual(
+            point["ratios"], {"bullish": None, "bearish": None, "range": None}
+        )
+
+    def test_single_report_conflict_counts_as_mixed(self) -> None:
+        """同一报告内两个合约方向相反时计机构分歧，不算未明确。"""
+        rows = [
+            make_row(group="g1", contract_key="CU2404", direction="bullish"),
+            make_row(group="g1", contract_key="CU2405", direction="bearish"),
+        ]
+        point = aggregate_trends(rows)[0]
+        self.assertEqual(point["mixed_count"], 1)
+        self.assertEqual(point["unresolved_count"], 0)
+        self.assertEqual(point["bullish_count"], 0)
+        self.assertEqual(point["bearish_count"], 0)
+        self.assertEqual(point["report_count"], 1)
+        self.assertEqual(
+            point["ratios"], {"bullish": None, "bearish": None, "range": None}
+        )
+
+    def test_unconditional_direction_still_votes(self) -> None:
+        """同机构一条条件、一条无条件时，无条件那条正常计票。"""
+        rows = [
+            make_row(group="g1", direction="bullish", statement="conditional"),
+            make_row(group="g2", direction="bullish", statement="unconditional"),
+        ]
+        point = aggregate_trends(rows)[0]
+        self.assertEqual(point["bullish_count"], 1)
+        self.assertEqual(point["conditional_count"], 1)
+        self.assertEqual(point["ratios"]["bullish"], 1.0)
+
     def test_product_level_view_wins_over_contracts(self) -> None:
         """同时有品种级判断时优先采用，不因合约方向不同计分歧。"""
         rows = [

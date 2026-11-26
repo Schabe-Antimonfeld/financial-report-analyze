@@ -169,6 +169,11 @@ class CollectReportTest(unittest.TestCase):
 
         self.assertEqual(len(sources.blocks), 2)
         self.assertEqual([block.order for block in sources.blocks], [1, 2])
+        self.assertNotEqual(
+            sources.blocks[0].block_id, sources.blocks[1].block_id
+        )
+        self.assertEqual(sources.blocks[0].block_id, "b-0001")
+        self.assertEqual(sources.blocks[1].block_id, "a2-b-0001")
         roles = [part.role for part in sources.parts]
         self.assertEqual(roles.count("main"), 1)
         self.assertEqual(roles.count("attachment"), 2)

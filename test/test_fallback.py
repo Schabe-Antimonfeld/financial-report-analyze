@@ -6,6 +6,7 @@ import io
 import json
 import unittest
 
+from backend.config import FallbackSettings, Settings
 from backend.fallback import (
     build_prompt,
     infer_direction,
@@ -264,6 +265,26 @@ class InferDirectionTest(unittest.TestCase):
         self.assertEqual(result.error_code, "invalid_evidence")
         self.assertIsNone(result.direction)
         self.assertFalse(result.retryable)
+
+    def test_completion_stub_ignores_disabled_flag(self) -> None:
+        """离线替身不受 fallback.enabled 开关影响。"""
+        response = json.dumps(
+            {
+                "scope_id": "cu||short_term",
+                "direction": "bullish",
+                "evidence": [
+                    {"block_id": "f-001", "quote": "铜现货库存持续下降，现货成交改善。"}
+                ],
+                "inference_reason": "库存下降，推断短期偏强。",
+            },
+            ensure_ascii=False,
+        )
+        settings = Settings(fallback=FallbackSettings(enabled=False))
+        result = infer_direction(
+            self.task, settings=settings, completion=lambda _prompt: response
+        )
+        self.assertEqual(result.status, "inferred")
+        self.assertEqual(result.direction, "bullish")
 
     def test_timeout_is_retryable(self) -> None:
         """超时标记可重试，规则结果仍可提交。"""

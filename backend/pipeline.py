@@ -109,10 +109,18 @@ class _ReportSources:
     ) -> None:
         """登记一个来源的块、版本与问题。
 
+        附件块号加上来源前缀，避免与主文或另一个附件的 ``b-0001`` 冲突；
+        块号在同一个原文版本内仍然稳定。
+
         :param article: 来源原文。
         :param extraction: 解析结果。
         :param chain: 该来源的附件引用链。
         """
+        if chain:
+            prefix = f"a{article.article_id}-"
+            for block in extraction.blocks:
+                if block.block_id and not block.block_id.startswith(prefix):
+                    block.block_id = f"{prefix}{block.block_id}"
         self.blocks.extend(extraction.blocks)
         self.issues.extend(extraction.issues)
         self.chains[(article.article_id, article.content_hash)] = chain
