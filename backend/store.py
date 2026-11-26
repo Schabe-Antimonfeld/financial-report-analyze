@@ -1,11 +1,21 @@
-from dataclasses import dataclass
-from hashlib import sha256
-from pathlib import Path
+import json
+import os
 import re
+from argparse import ArgumentParser
+from dataclasses import asdict, dataclass
+from datetime import date, datetime
+from hashlib import sha256
+from io import BytesIO
+from pathlib import Path, PurePosixPath
 
-from mysql.connector import MySQLConnection
+from mysql.connector import Error as MySQLError
+from mysql.connector import MySQLConnection, connect
 from mysql.connector.errorcode import ER_DUP_ENTRY
 from mysql.connector.errors import IntegrityError
+
+
+DATA_ROOT = Path(__file__).resolve().parents[1] / "data"
+EXTENSIONS = {".pdf", ".html", ".htm", ".png"}
 
 
 @dataclass
@@ -18,6 +28,33 @@ class SourceFile:
     format_issue: str | None
     declared_extension: str
     extension_mismatch: bool
+
+
+@dataclass
+class IngestResult:
+    article_id: int
+    relative_path: str
+    content_hash: str
+    format: str
+    status: str
+    error_code: str | None = None
+
+
+@dataclass
+class RawArticle:
+    article_id: int
+    relative_path: str
+    content_hash: str
+    format: str
+    content: bytes
+    collected_on: date | None
+    institution_hint: str | None
+    format_issue: str | None
+    extension_mismatch: bool
+
+
+class ArticleNotFound(LookupError):
+    """The requested article or article version is not in the database."""
 
 
 def detect_format(head: bytes) -> tuple[str, str | None]:
@@ -62,6 +99,11 @@ def detect_format(head: bytes) -> tuple[str, str | None]:
     return "unknown", "unknown_signature"
 
 
+def _extension_mismatch(extension: str, file_format: str) -> bool:
+    expected = "html" if extension == "htm" else extension
+    return file_format != "unknown" and file_format != expected
+
+
 def read_file(path: Path, data_root: Path) -> SourceFile:
     """
     Read a file from the given path and return a SourceFile object containing its metadata.
@@ -75,22 +117,63 @@ def read_file(path: Path, data_root: Path) -> SourceFile:
     """
     path = path.resolve()
     relative_path = path.relative_to(data_root.resolve()).as_posix()
-    content = path.read_bytes()
-    hash = sha256(content).digest()
+    buffer = BytesIO()
+    digest = sha256()
+    with path.open("rb") as stream:
+        while chunk := stream.read(1024 * 1024):
+            buffer.write(chunk)
+            digest.update(chunk)
+    content = buffer.getvalue()
     file_format, format_issue = detect_format(content[:8192])
     extension = path.suffix.lower().removeprefix(".")
-    extension = "html" if extension == "htm" else extension
-    source = SourceFile(
+    return SourceFile(
         relative_path=relative_path,
         path_key=sha256(relative_path.encode("utf-8")).digest(),
-        content_hash=hash,
+        content_hash=digest.digest(),
         content=content,
         file_format=file_format,
         format_issue=format_issue,
         declared_extension=extension,
-        extension_mismatch=(file_format != "unknown" and file_format != extension),
+        extension_mismatch=_extension_mismatch(extension, file_format),
     )
-    return source
+
+
+def discover_files(data_root: Path = DATA_ROOT) -> list[Path]:
+    """Find supported files under data1 and data2 in normalized path order."""
+    root = data_root.resolve()
+    if not root.is_dir():
+        raise FileNotFoundError(root)
+
+    files = set()
+    for batch in ("data1", "data2"):
+        for path in (root / batch).rglob("*"):
+            if path.suffix.lower() in EXTENSIONS and path.is_file():
+                resolved = path.resolve()
+                if resolved.is_relative_to(root):
+                    files.add(resolved)
+    return sorted(files, key=lambda path: path.relative_to(root).as_posix())
+
+
+def _path_metadata(relative_path: str) -> tuple[date | None, str | None, str | None, str | None]:
+    path = PurePosixPath(relative_path)
+    collected_on = None
+    if re.fullmatch(r"[0-9]{8}", path.parent.name):
+        try:
+            collected_on = datetime.strptime(path.parent.name, "%Y%m%d").date()
+        except ValueError:
+            pass
+
+    name = re.fullmatch(r"(.+?)_([0-9]+)(?:_([0-9]+))?", path.stem)
+    if name is None:
+        return collected_on, None, None, None
+
+    institution, code, part = name.groups()
+    return (
+        collected_on,
+        institution if len(institution) <= 128 else None,
+        code if len(code) <= 64 else None,
+        part if part is not None and len(part) <= 32 else None,
+    )
 
 
 def store_source(connection: MySQLConnection, source: SourceFile) -> tuple[int, str]:
@@ -104,6 +187,11 @@ def store_source(connection: MySQLConnection, source: SourceFile) -> tuple[int, 
     Returns:
         tuple[int, str]: A tuple containing the article ID and the status of the operation ("inserted", "skipped", or "updated").
     '''
+    metadata = (
+        *_path_metadata(source.relative_path),
+        source.declared_extension,
+        source.extension_mismatch,
+    )
     connection.start_transaction()
     try:
         with connection.cursor(prepared=True) as cursor:
@@ -133,15 +221,15 @@ def store_source(connection: MySQLConnection, source: SourceFile) -> tuple[int, 
                     """
                     INSERT INTO raw_articles
                         (relative_path, path_key, content_hash,
+                         collected_on, institution_hint, collect_code, collect_part,
                          declared_extension, extension_mismatch)
-                    VALUES (%s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         source.relative_path,
                         source.path_key,
                         source.content_hash,
-                        source.declared_extension,
-                        source.extension_mismatch,
+                        *metadata,
                     ),
                 )
                 article_id = cursor.lastrowid
@@ -152,29 +240,33 @@ def store_source(connection: MySQLConnection, source: SourceFile) -> tuple[int, 
 
                 cursor.execute(
                     """
-                    SELECT id, relative_path, content_hash
+                    SELECT id, relative_path, content_hash,
+                           collected_on, institution_hint, collect_code, collect_part,
+                           declared_extension, extension_mismatch
                     FROM raw_articles
                     WHERE path_key = %s
                     FOR UPDATE
                     """,
                     (source.path_key,),
                 )
-                [(article_id, relative_path, current_hash)] = cursor.fetchall()
+                [(article_id, relative_path, current_hash, *current_metadata)] = cursor.fetchall()
 
                 if relative_path != source.relative_path:
                     raise ValueError("Path key matches a different relative path")
 
-                status = "skipped"
-                if current_hash != source.content_hash:
+                changed = current_hash != source.content_hash
+                status = "updated" if changed else "skipped"
+                if changed or tuple(current_metadata) != metadata:
                     cursor.execute(
                         """
                         UPDATE raw_articles
-                        SET content_hash = %s, extension_mismatch = %s
+                        SET content_hash = %s, collected_on = %s, institution_hint = %s,
+                            collect_code = %s, collect_part = %s,
+                            declared_extension = %s, extension_mismatch = %s
                         WHERE id = %s
                         """,
-                        (source.content_hash, source.extension_mismatch, article_id),
+                        (source.content_hash, *metadata, article_id),
                     )
-                    status = "updated"
 
             cursor.execute(
                 """
@@ -191,3 +283,115 @@ def store_source(connection: MySQLConnection, source: SourceFile) -> tuple[int, 
         raise
 
     return article_id, status
+
+
+def _connect() -> MySQLConnection:
+    return connect(
+        host=os.environ.get("DB_HOST", "127.0.0.1"),
+        port=int(os.environ.get("DB_PORT", "3306")),
+        database=os.environ.get("DB_NAME", "futures_reports"),
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"],
+        charset="utf8mb4",
+    )
+
+
+def ingest_file(path: str | Path, *, data_root: Path = DATA_ROOT) -> IngestResult:
+    """Read a file under data_root and commit its content and version."""
+    source = read_file(Path(path), data_root)
+    with _connect() as connection:
+        article_id, status = store_source(connection, source)
+    return IngestResult(
+        article_id, source.relative_path, source.content_hash.hex(), source.file_format, status
+    )
+
+
+def load_article(article_id: int, content_hash: str | None = None) -> RawArticle:
+    """Return the current article or a version belonging to that article."""
+    query = """
+        SELECT a.id, a.relative_path, c.content_hash, c.file_format, c.content,
+               a.collected_on, a.institution_hint, c.format_issue, a.declared_extension
+        FROM raw_articles AS a
+    """
+    if content_hash is None:
+        query += """
+            JOIN raw_contents AS c ON c.content_hash = a.content_hash
+            WHERE a.id = %s
+        """
+        params = (article_id,)
+    else:
+        digest = bytes.fromhex(content_hash)
+        if len(content_hash) != 64 or len(digest) != 32:
+            raise ValueError("Expected a 64-character SHA-256 hex string")
+        query += """
+            JOIN raw_article_versions AS v ON v.article_id = a.id
+            JOIN raw_contents AS c ON c.content_hash = v.content_hash
+            WHERE a.id = %s AND v.content_hash = UNHEX(%s)
+        """
+        params = (article_id, digest.hex())
+
+    # The pure-Python driver reassembles multi-packet BLOBs on the text result path.
+    with _connect() as connection, connection.cursor() as cursor:
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+    if not rows:
+        raise ArticleNotFound(f"No article or version found for article ID {article_id}")
+
+    [(article_id, path, digest, file_format, content, collected_on, institution, issue, extension)] = rows
+    return RawArticle(
+        article_id=article_id,
+        relative_path=path,
+        content_hash=digest.hex(),
+        format=file_format,
+        content=bytes(content),
+        collected_on=collected_on,
+        institution_hint=institution,
+        format_issue=issue,
+        extension_mismatch=_extension_mismatch(extension, file_format),
+    )
+
+
+def find_article_id(relative_path: str) -> int | None:
+    """Find the article ID for an exact normalized path under the data root."""
+    path_key = sha256(relative_path.encode("utf-8")).digest()
+    with _connect() as connection, connection.cursor(prepared=True) as cursor:
+        cursor.execute(
+            "SELECT id, relative_path FROM raw_articles WHERE path_key = %s", (path_key,)
+        )
+        rows = cursor.fetchall()
+    if rows and rows[0][1] == relative_path:
+        return rows[0][0]
+    return None
+
+
+def main() -> int:
+    """Discover or import a data root, emitting one JSON record per file."""
+    parser = ArgumentParser(description="Import raw financial reports into MySQL")
+    parser.add_argument("--data-root", type=Path, default=DATA_ROOT)
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+    if not args.dry_run and ("DB_USER" not in os.environ or "DB_PASSWORD" not in os.environ):
+        parser.error("Set DB_USER and DB_PASSWORD before importing")
+
+    root = args.data_root.resolve()
+    if not root.is_dir():
+        parser.error(f"Data root is not a directory: {root}")
+
+    had_errors = False
+    for path in discover_files(root):
+        relative_path = path.relative_to(root).as_posix()
+        if args.dry_run:
+            result = {"relative_path": relative_path, "status": "discovered"}
+        else:
+            try:
+                result = asdict(ingest_file(path, data_root=root))
+            except (MySQLError, OSError, ValueError) as error:
+                had_errors = True
+                error_code = f"mysql_{error.errno}" if isinstance(error, MySQLError) else type(error).__name__
+                result = {"relative_path": relative_path, "status": "error", "error_code": error_code}
+        print(json.dumps(result))
+    return int(had_errors)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
