@@ -1,0 +1,40 @@
+{
+  "id": 501,
+  "institution": "宝城期货",
+  "title": "有色早报（联调示例）",
+  "published_on": "2024-03-01",
+  "date_source": "publication",
+  "product_id": "cu",
+  "contract": "CU2404",
+  "period_key": "short_term",
+  "period_text": "短期",
+  "period_definition": "<=1w",
+  "direction": "bullish",
+  "source": "rule",
+  "statement_type": "unconditional",
+  "review_state": "recognized",
+  "reason_code": null,
+  "outlook_text": "上涨",
+  "inference_reason": null,
+  "conditions": [],
+  "evidence": [
+    {
+      "id": 701,
+      "kind": "outlook",
+      "rule_id": "table_direction",
+      "grade": "A",
+      "quote": "上涨",
+      "block_id": "b-0004",
+      "raw_article_id": 101,
+      "content_hash": "1d0d79619896c3277735beaae462e5a28e07cee82a45f8334f12b50850f50707",
+      "location": {
+        "format": "pdf",
+        "page": 1,
+        "bbox": [164.45, 225.569, 183.05, 234.569],
+        "page_size": [595.32, 841.92]
+      },
+      "attachment_chain": [],
+      "contract": "CU2404"
+    }
+  ]
+}
